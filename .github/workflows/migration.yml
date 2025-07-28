@@ -62,6 +62,11 @@ jobs:
           terraform_version: 1.5.7
 
       - name: Create cluster and service Account B
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_B }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_B }}
+          AWS_DEFAULT_REGION: us-east-2
         run: |
           terraform init
-          terraform apply -auto-approve 
+          terraform apply -auto-approve
+
