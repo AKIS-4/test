@@ -56,6 +56,11 @@ jobs:
           chmod +x migrate2.sh
           ./migrate2.sh
 
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
       - name: Create cluster and service Account B
         run: |
           terraform init
