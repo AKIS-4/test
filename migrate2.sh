@@ -2,7 +2,9 @@
 
 # Variables
 set -e
+set -a
 source .env
+set +a
 
 # Login & Push to Account B -------------------------------------
 aws ecr get-login-password --region "$REGION" \
