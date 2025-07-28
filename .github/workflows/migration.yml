@@ -1,0 +1,64 @@
+name: Transfer ECS Services to Account B
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to transfer'
+        required: false
+        default: 'latest'
+      task_family1:
+        description: 'Task definition family name for service 1'
+        required: false
+        default: 'api-with-redis-task'
+      task_family2:
+        description: 'Task definition family name for service 2'
+        required: false
+        default: 'frontend-task'
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set AWS credentials for Account A and B
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID_A }} --profile account-a
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY_A }} --profile account-a
+          aws configure set region us-east-2 --profile account-a
+
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID_B }} --profile account-b
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY_B }} --profile account-b
+          aws configure set region us-east-2 --profile account-b
+
+      - name: Create .env file for script
+        run: |
+          cat <<EOF > .env
+          ACCOUNT_A_REPO1=${{ secrets.ACCOUNT_A_REPO1 }}
+          ACCOUNT_B_REPO1=${{ secrets.ACCOUNT_B_REPO1 }}
+          ACCOUNT_A_REPO2=${{ secrets.ACCOUNT_A_REPO2 }}
+          ACCOUNT_B_REPO2=${{ secrets.ACCOUNT_B_REPO2 }}
+          IMAGE_TAG=${{ github.event.inputs.image_tag }}
+          TASK_FAMILY1=${{ github.event.inputs.task_family1 }}
+          TASK_FAMILY2=${{ github.event.inputs.task_family2 }}
+          REGION=us-east-2
+          PROFILE_A=account-a
+          PROFILE_B=account-b
+          OUT_FILE1=td1.json
+          OUT_FILE2=td2.json
+          EOF
+
+      - name: Run transfer script
+        run: |
+          chmod +x migrate.sh
+          ./migrate.sh
+      
+      - name: Create cluster and service Account B
+        env:
+          AWS_PROFILE: account-b
+        run: |
+          terraform init
+          terraform apply -auto-approve 
