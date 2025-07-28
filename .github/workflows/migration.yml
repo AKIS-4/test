@@ -24,41 +24,37 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set AWS credentials for Account A and B
-        run: |
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID_A }} --profile account-a
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY_A }} --profile account-a
-          aws configure set region us-east-2 --profile account-a
-
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID_B }} --profile account-b
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY_B }} --profile account-b
-          aws configure set region us-east-2 --profile account-b
-
       - name: Create .env file for script
         run: |
-          cat <<EOF > .env
-          ACCOUNT_A_REPO1=${{ secrets.ACCOUNT_A_REPO1 }}
-          ACCOUNT_B_REPO1=${{ secrets.ACCOUNT_B_REPO1 }}
-          ACCOUNT_A_REPO2=${{ secrets.ACCOUNT_A_REPO2 }}
-          ACCOUNT_B_REPO2=${{ secrets.ACCOUNT_B_REPO2 }}
-          IMAGE_TAG=${{ github.event.inputs.image_tag }}
-          TASK_FAMILY1=${{ github.event.inputs.task_family1 }}
-          TASK_FAMILY2=${{ github.event.inputs.task_family2 }}
-          REGION=us-east-2
-          PROFILE_A=account-a
-          PROFILE_B=account-b
-          OUT_FILE1=td1.json
-          OUT_FILE2=td2.json
-          EOF
+          echo "Creating .env file for migration script"
+          echo "ACCOUNT_A_REPO1=${{ secrets.ACCOUNT_A_REPO1 }}" >> .env
+          echo "ACCOUNT_B_REPO1=${{ secrets.ACCOUNT_B_REPO1 }}" >> .env
+          echo "ACCOUNT_A_REPO2=${{ secrets.ACCOUNT_A_REPO2 }}" >> .env
+          echo "ACCOUNT_B_REPO2=${{ secrets.ACCOUNT_B_REPO2 }}" >> .env
+          echo "IMAGE_TAG=${{ github.event.inputs.image_tag }}" >> .env
+          echo "TASK_FAMILY1=${{ github.event.inputs.task_family1 }}" >> .env
+          echo "TASK_FAMILY2=${{ github.event.inputs.task_family2 }}" >> .env
+          echo "REGION=us-east-2" >> .env
+          echo "OUT_FILE1=td1.json" >> .env
+          echo "OUT_FILE2=td2.json" >> .env
 
-      - name: Run transfer script
-        run: |
-          chmod +x migrate.sh
-          ./migrate.sh
-      
-      - name: Create cluster and service Account B
+      - name: Run migrate script (Account A)
         env:
-          AWS_PROFILE: account-b
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_A }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_A }}
+          AWS_DEFAULT_REGION: us-east-2
+        run: |
+          ./migrate.sh
+
+      - name: Run migrate2 script (Account B)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_B }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_B }}
+          AWS_DEFAULT_REGION: us-east-2
+        run: |
+          ./migrate2.sh
+
+      - name: Create cluster and service Account B
         run: |
           terraform init
           terraform apply -auto-approve 
