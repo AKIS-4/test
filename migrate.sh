@@ -2,7 +2,9 @@
 
 # Variables
 set -e
+set -a
 source .env
+set +a
 
 # Login & Pull from Account A ---------------------------------
 
