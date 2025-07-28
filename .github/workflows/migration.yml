@@ -10,11 +10,11 @@ on:
       task_family1:
         description: 'Task definition family name for service 1'
         required: false
-        default: 'api-with-redis-task'
+        default: 'abhishekharkar-strapi-task'
       task_family2:
         description: 'Task definition family name for service 2'
         required: false
-        default: 'frontend-task'
+        default: 'abhishekharkar-strapi-task'
 
 jobs:
   migrate:

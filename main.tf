@@ -52,6 +52,7 @@ resource "aws_security_group" "ecs_service" {
 # ECS cluster
 resource "aws_ecs_cluster" "main" {
   name = "abhishekharkar-ecs-cluster"
+  depends_on = [aws_iam_role.ecs_task_execution_role, aws_iam_role_policy_attachment.ecs_task_execution_role_policy]
 }
 
 # Task Definitions from JSON
@@ -62,7 +63,7 @@ resource "aws_ecs_task_definition" "from_file1" {
   cpu                      = local.td1.cpu
   memory                   = local.td1.memory
   container_definitions    = jsonencode(local.td1.containerDefinitions)
-  execution_role_arn       = "arn:aws:iam::607700977843:role/ecs-task-execution-role"
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 }
 
 resource "aws_ecs_task_definition" "from_file2" {
@@ -72,7 +73,7 @@ resource "aws_ecs_task_definition" "from_file2" {
   cpu                      = local.td2.cpu
   memory                   = local.td2.memory
   container_definitions    = jsonencode(local.td2.containerDefinitions)
-  execution_role_arn       = "arn:aws:iam::607700977843:role/ecs-task-execution-role"
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 }
 
 # ECS Services
@@ -105,5 +106,28 @@ resource "aws_ecs_service" "main2" {
     security_groups  = [aws_security_group.ecs_service.id]
   }
 
-  depends_on = [aws_ecs_task_definition.from_file2]
+  depends_on = [ aws_ecs_task_definition.from_file2]
+}
+
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name = "ecsTaskExecutionRole"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = "sts:AssumeRole",
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        },
+        Effect = "Allow",
+        Sid    = ""
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
